@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Peringatan Dini Banjir</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-water"></i>
+                    <h1>Sistem Peringatan Dini Banjir</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-export" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                    <button class="btn btn-export" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Alert Section -->
+        <div class="alert-section" id="alertSection">
+            <div class="alert-box normal" id="alertBox">
+                <div class="alert-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="alert-content">
+                    <h2>Status Normal</h2>
+                    <p>Semua parameter dalam kondisi aman</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard">
+            <!-- Real-time Data Cards -->
+            <div class="data-cards">
+                <div class="card water-height">
+                    <div class="card-icon">
+                        <i class="fas fa-water"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Ketinggian Air</h3>
+                        <div class="card-value" id="waterHeight">-</div>
+                        <div class="card-unit">cm</div>
+                        <div class="card-threshold" id="waterThreshold">Ambang: - cm</div>
+                    </div>
+                </div>
+
+                <div class="card rainfall">
+                    <div class="card-icon">
+                        <i class="fas fa-cloud-rain"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Curah Hujan</h3>
+                        <div class="card-value" id="rainfall">-</div>
+                        <div class="card-unit">mm</div>
+                        <div class="card-threshold" id="rainfallThreshold">Ambang: - mm</div>
+                    </div>
+                </div>
+
+                <div class="card wind-speed">
+                    <div class="card-icon">
+                        <i class="fas fa-wind"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Kecepatan Angin</h3>
+                        <div class="card-value" id="windSpeed">-</div>
+                        <div class="card-unit">km/h</div>
+                        <div class="card-threshold" id="windThreshold">Ambang: - km/h</div>
+                    </div>
+                </div>
+
+                <div class="card timestamp">
+                    <div class="card-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Waktu Update</h3>
+                        <div class="card-value" id="updateTime">-</div>
+                        <div class="card-unit">Terakhir diperbarui</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <h3>Grafik Ketinggian Air</h3>
+                    <canvas id="waterHeightChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Grafik Curah Hujan</h3>
+                    <canvas id="rainfallChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Grafik Kecepatan Angin</h3>
+                    <canvas id="windSpeedChart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Status Peringatan</h3>
+                    <canvas id="alertChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="settings-section">
+                <h3>Pengaturan Ambang Batas</h3>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label>Ketinggian Air (cm)</label>
+                        <input type="number" id="waterThresholdInput" step="0.1" />
+                    </div>
+                    <div class="setting-item">
+                        <label>Curah Hujan (mm)</label>
+                        <input type="number" id="rainfallThresholdInput" step="0.1" />
+                    </div>
+                    <div class="setting-item">
+                        <label>Kecepatan Angin (km/h)</label>
+                        <input type="number" id="windThresholdInput" step="0.1" />
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="updateSettings()">Simpan Pengaturan</button>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-section">
+                <h3>Riwayat Data Sensor</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Waktu</th>
+                                <th>Ketinggian Air (cm)</th>
+                                <th>Curah Hujan (mm)</th>
+                                <th>Kecepatan Angin (km/h)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center;">Memuat data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-section">
+                <h3>Statistik Data</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <h4>Ketinggian Air</h4>
+                        <div class="stat-item">
+                            <span>Rata-rata:</span>
+                            <strong id="statWaterAvg">-</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Maksimal:</span>
+                            <strong id="statWaterMax">-</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Minimal:</span>
+                            <strong id="statWaterMin">-</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-box">
+                        <h4>Curah Hujan</h4>
+                        <div class="stat-item">
+                            <span>Rata-rata:</span>
+                            <strong id="statRainfallAvg">-</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Maksimal:</span>
+                            <strong id="statRainfallMax">-</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Minimal:</span>
+                            <strong id="statRainfallMin">-</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-box">
+                        <h4>Kecepatan Angin</h4>
+                        <div class="stat-item">
+                            <span>Rata-rata:</span>
+                            <strong id="statWindAvg">-</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Maksimal:</span>
+                            <strong id="statWindMax">-</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Minimal:</span>
+                            <strong id="statWindMin">-</strong>
+                        </div>
+                    </div>
+
+                    <div class="stat-box alert-summary">
+                        <h4>Ringkasan Peringatan</h4>
+                        <div class="stat-item">
+                            <span>Total Data:</span>
+                            <strong id="statTotalRecords">-</strong>
+                        </div>
+                        <div class="stat-item warning">
+                            <span>Darurat:</span>
+                            <strong id="statEmergency">-</strong>
+                        </div>
+                        <div class="stat-item critical">
+                            <span>Peringatan:</span>
+                            <strong id="statWarning">-</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Sistem Peringatan Dini Banjir - Monitoring Real-time</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
